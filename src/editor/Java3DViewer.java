@@ -159,7 +159,7 @@ public class Java3DViewer extends Canvas3D {
 					if (bg != null) {
 						System.out.println("Shape "+bg.getName()+" selected");
 						if (bg.getUserData() != null) {
-							DrawShapeModel sh = (DrawShapeModel) bg.getUserData();
+							VisualShape sh = (VisualShape) bg.getUserData();
 							Mesh m = sh.getMesh();
 							if (m != null) {
 								Point3d p3d = pickInfo.getClosestIntersectionPoint();
@@ -306,9 +306,9 @@ public class Java3DViewer extends Canvas3D {
     	view.detach();
     	rotation.removeAllChildren();    	
     	drawModel = d;
-    	if (drawModel.getPicture2() == null) return;
+    	if (drawModel.getPicture() == null) return;
     	Integer i = 0;
-    	for (DrawShapeModel v : drawModel.getPicture2()) {
+    	for (VisualShape v : drawModel.getPicture()) {
     		TransformGroup shapeGroup = new TransformGroup();
     		rotation.addChild(shapeGroup);
     		BranchGroup faces = v.getFaces2(BranchGroup.class);
@@ -404,7 +404,7 @@ public class Java3DViewer extends Canvas3D {
     
 
     
-    private Bounds getBounds(DrawShapeModel v) {
+    private Bounds getBounds(VisualShape v) {
     	Bounds b = null;
     	if (v == null) return null;
 		if (v.getFaces2(BranchGroup.class) != null) b = v.getFaces2(BranchGroup.class).getBounds();
@@ -415,7 +415,7 @@ public class Java3DViewer extends Canvas3D {
     public void zoomAll() {
     	bounds = new BoundingSphere();
     	boolean first = true;
-    	for (DrawShapeModel v : drawModel.getPicture2()) {
+    	for (VisualShape v : drawModel.getPicture()) {
     		Bounds b = getBounds(v);
     		if (first) bounds.set(b); else bounds.combine(getBounds(v));
     		first = false;

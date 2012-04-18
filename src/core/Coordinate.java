@@ -1,6 +1,5 @@
 package core;
 
-import Jama.Matrix;
 
 /**
  * Class for 3D coordinate

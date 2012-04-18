@@ -16,7 +16,7 @@ import editor.Shape.Edge;
 import editor.Shape.FaceMesh;
 import editor.Shape.Vertex;
 
-public class DrawShapeModelImpl implements DrawShapeModel {
+public class VisualShapeImpl implements VisualShape {
 
 	protected int type;
 	
@@ -52,16 +52,16 @@ public class DrawShapeModelImpl implements DrawShapeModel {
 	
 	VisualSettings vs;
 		
-	public DrawShapeModelImpl(int type, TopoDS_Shape shape, VisualSettings vs) {
+	public VisualShapeImpl(int type, TopoDS_Shape shape, VisualSettings vs) {
 		this.type = type;
 		this.vs = new VisualSettings(vs);		
 		setShape(shape);
 		
 	}
 	
-	private CommonShape commonShape; 
+	private GeometryShape commonShape; 
 	
-	public DrawShapeModelImpl(int type, CommonShape shape, VisualSettings vs) {
+	public VisualShapeImpl(int type, GeometryShape shape, VisualSettings vs) {
 		this.type = type;
 		this.vs = new VisualSettings(vs);
 		
@@ -69,7 +69,7 @@ public class DrawShapeModelImpl implements DrawShapeModel {
 		
 	}
 	
-	public void setShape(CommonShape shape) {
+	public void setShape(GeometryShape shape) {
 		
 		this.commonShape = shape;
 		
@@ -102,7 +102,7 @@ public class DrawShapeModelImpl implements DrawShapeModel {
 	}
 	
 
-	public DrawShapeModelImpl(int type, Mesh mesh, VisualSettings vs) {
+	public VisualShapeImpl(int type, Mesh mesh, VisualSettings vs) {
 		this.type = type;		
 		this.vs = new VisualSettings(vs);
 		this.mesh = mesh;
@@ -313,7 +313,7 @@ public class DrawShapeModelImpl implements DrawShapeModel {
 	}
 
 	@Override
-	public <T> T haveCommon(DrawShapeModel s, Class<T> clazz) {
+	public <T> T haveCommon(VisualShape s, Class<T> clazz) {
 		// TODO Auto-generated method stub
 		
 		if (!this.getBounds().intersect(s.getBounds(Bounds.class))) {
@@ -351,7 +351,7 @@ public class DrawShapeModelImpl implements DrawShapeModel {
 	}
 
 	@Override
-	public CommonShape getCommonShape() {
+	public GeometryShape getGeometryShape() {
 		return commonShape;
 	}
 	

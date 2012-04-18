@@ -1,6 +1,6 @@
 package editor;
 
-public interface DrawShapeModel {
+public interface VisualShape {
 
 	void select();
 	void setSelected(boolean v);
@@ -15,7 +15,7 @@ public interface DrawShapeModel {
 	void setMeshSize(double x, double y, double z, int n);
 	void setCutted(boolean cutted);
 	
-	<T> T haveCommon(final DrawShapeModel s, final Class<T> clazz);
+	<T> T haveCommon(final VisualShape s, final Class<T> clazz);
 	<T> T getBounds(final Class<T> clazz);
 	<T> T getFaces2(Class<T> clazz);
 	<T> T getEdges2(Class<T> clazz);
@@ -26,5 +26,5 @@ public interface DrawShapeModel {
 	
 	Mesh getMesh();
 	
-	CommonShape getCommonShape();
+	GeometryShape getGeometryShape();
 }

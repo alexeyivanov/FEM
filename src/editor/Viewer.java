@@ -395,9 +395,9 @@ public class Viewer extends Canvas3D {
     	view.detach();
     	rotation.removeAllChildren();    	
     	drawModel = d;
-    	if (drawModel.getPicture2() == null) return;
+    	if (drawModel.getPicture() == null) return;
     	Integer i = 0;
-    	for (DrawShapeModel v : drawModel.getPicture2()) {
+    	for (VisualShape v : drawModel.getPicture()) {
     		TransformGroup shapeGroup = new TransformGroup();
     		rotation.addChild(shapeGroup);
     		BranchGroup faces = v.getFaces2(BranchGroup.class);

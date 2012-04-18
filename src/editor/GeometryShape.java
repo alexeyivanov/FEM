@@ -4,7 +4,12 @@ import java.util.List;
 
 import editor.Shape.FaceMesh;
 
-public interface CommonShape {
+/**
+ * GeometryShape
+ *  - keep geometry data.
+ *  - keep implicitly internal representation of shape, e.g. occ shape. 
+ */
+public interface GeometryShape {
 	
 	List<FaceMesh> getFaceMeshes();
 	List<float[]> getEdgeArrays();

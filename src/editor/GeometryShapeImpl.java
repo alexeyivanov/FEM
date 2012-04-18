@@ -4,17 +4,17 @@ import java.util.List;
 
 import editor.Shape.FaceMesh;
 
-public class CommonShapeImpl implements CommonShape {
+public class GeometryShapeImpl implements GeometryShape {
 	
 	private List<FaceMesh> faceMeshes;
 	private List<float[]> edgeArrays;
 	
-	public CommonShapeImpl(List<FaceMesh> faceMeshes, List<float[]> edgeArrays) {
+	public GeometryShapeImpl(List<FaceMesh> faceMeshes, List<float[]> edgeArrays) {
 		this.faceMeshes = faceMeshes;
 		this.edgeArrays = edgeArrays;
 	}
 	
-	public <T> CommonShapeImpl(List<FaceMesh> faceMeshes, List<float[]> edgeArrays, T shape, Class<T> clazz) {
+	public <T> GeometryShapeImpl(List<FaceMesh> faceMeshes, List<float[]> edgeArrays, T shape, Class<T> clazz) {
 		this.faceMeshes = faceMeshes;
 		this.edgeArrays = edgeArrays;
 		intertalShape = shape;

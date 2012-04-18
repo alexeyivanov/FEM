@@ -2,239 +2,237 @@ package editor;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.media.j3d.ImageComponent2D;
 import javax.media.j3d.Texture;
 import javax.media.j3d.Texture2D;
-import javax.vecmath.*;
+import javax.vecmath.Point3d;
 
-import org.jcae.opencascade.jni.*;
+import org.jcae.opencascade.jni.BRepAlgoAPI_Cut;
+import org.jcae.opencascade.jni.TopoDS_Shape;
 
 import com.sun.j3d.utils.image.TextureLoader;
 
+import core.Coordinate;
 
 public class DrawModelImpl implements DrawModel {
 	
 	private Coordinate position = new Coordinate(0, 0, 0);
 	private Coordinate direction = new Coordinate(0, 1, 0);
-	VisualSettings vs;
+	private VisualSettings vs;
 	private boolean checkIntersection = true, virtualDrawingMode = false;
-//	private ShapeModel lastEdge = null;
-	private DrawShapeModel lastEdge = null;
+	private VisualShape lastEdge = null;
 	private Coordinate firstPoint = new Coordinate(0,0,0);
 	
-//	private ArrayList<ShapeModel> shapes = new ArrayList<ShapeModel>(); 
-//	private ArrayList<ShapeModel> common = new ArrayList<ShapeModel>(); 
+	private ArrayList<VisualShape> shapeList = new ArrayList<VisualShape>(); 
+	private ArrayList<VisualShape> commonList = new ArrayList<VisualShape>();
 	
-	private ArrayList<DrawShapeModel> shapeList = new ArrayList<DrawShapeModel>(); 
-	private ArrayList<DrawShapeModel> commonList = new ArrayList<DrawShapeModel>();
+	private GeometryShapeManager geometryShapeManager;
+	private VisualShapeManager visualShapeManager;
 	
-	private CommonShapeModelManager commonShapeModelManager;
-	private DrawShapeModelManager drawShapeModelManager;
-	
-	public CommonShapeModelManager getCommonShapeModelManager() {
-		return commonShapeModelManager;
+
+	@Override
+	public GeometryShapeManager getGeometryShapeManager() {
+		return geometryShapeManager;
 	}
 
-	public void setCommonShapeModelManager(CommonShapeModelManager shapeModelManager) {
-		this.commonShapeModelManager = shapeModelManager;
+	@Override
+	public void setGeometryShapeManager(GeometryShapeManager geometryShapeManager) {
+		this.geometryShapeManager = geometryShapeManager;
+		
 	}
 
-	public DrawShapeModelManager getDrawShapeModelManager() {
-		return drawShapeModelManager;
+	public VisualShapeManager getDrawShapeModelManager() {
+		return visualShapeManager;
 	}
 
-	public void setDrawShapeModelManager(DrawShapeModelManager drawShapeModelManager) {
-		this.drawShapeModelManager = drawShapeModelManager;
+	public void setDrawShapeModelManager(VisualShapeManager drawShapeModelManager) {
+		this.visualShapeManager = drawShapeModelManager;
 	}
 
 	public DrawModelImpl() {
 		vs = new VisualSettings(Color.GREEN, Color.BLACK, 1, null, 0);
 	}
 	
-	public void add(ArrayList<DrawShapeModel> newShapes) {
-		for (DrawShapeModel s: newShapes) {
+	public void add(ArrayList<VisualShape> newShapes) {
+		for (VisualShape s: newShapes) {
 			add(s);
 		}
 	}
 	
-	public void add(DrawShapeModel[] newShapes) {
-		for (DrawShapeModel s: newShapes) {
+	public void add(VisualShape[] newShapes) {
+		for (VisualShape s: newShapes) {
 			add(s);
 		}
 	}
 	
 	public void add(DrawModelImpl d) {
-		for (DrawShapeModel s : d.shapeList) {
+		for (VisualShape s : d.shapeList) {
 			add(s);
 		}
 	}
 		
-	private DrawShapeModel checkIntersection(DrawShapeModel shape) {
+	private VisualShape checkIntersection(VisualShape shape) {
 		int i = 0;
+		
 		while (i < shapeList.size()) {
-			DrawShapeModel s = shapeList.get(i);
+			VisualShape s = shapeList.get(i);
+			
 			TopoDS_Shape common = shape.haveCommon(s, TopoDS_Shape.class); 
+			
 			if (common != null) {
+				
 				TopoDS_Shape s1 = null;
-				if (shape.getType() >= s.getType())
+				
+				if (shape.getType() >= s.getType()) {
 					s1 = new BRepAlgoAPI_Cut(s.getShape2(TopoDS_Shape.class), shape.getShape2(TopoDS_Shape.class)).shape();
-				else s1 = s.getShape2(TopoDS_Shape.class);
+				} else {
+					s1 = s.getShape2(TopoDS_Shape.class);
+				}
+				
 				TopoDS_Shape s2 = common;
 				TopoDS_Shape s3 = null;
-				if (s.getType() >= shape.getType())
+				
+				if (s.getType() >= shape.getType()) {
 					s3 = new BRepAlgoAPI_Cut(shape.getShape2(TopoDS_Shape.class), s.getShape2(TopoDS_Shape.class)).shape();
-				else s3 = shape.getShape2(TopoDS_Shape.class);
+				} else {
+					s3 = shape.getShape2(TopoDS_Shape.class);
+				}
+				
 				boolean s1empty = OCCUtils.isEmpty(s1), 
 				        s2empty = OCCUtils.isEmpty(s2),
 				        s3empty = OCCUtils.isEmpty(s3);
+				
 				if (s1empty) { // s inside shape
 					if (!s3empty) {
-						DrawShapeModel toReturn = checkIntersection(new DrawShapeModelImpl(shape.getType(), s3, shape.getVisualSettings()));
+						VisualShape toReturn = checkIntersection(new VisualShapeImpl(shape.getType(), s3, shape.getVisualSettings()));
 						toReturn.setCutted(true);
 						return toReturn;
 					}
 					return null;
 				}
+				
 				if (s3empty) { // shape inside s
 					if (!s1empty) shapeList.get(i).setShape(s1, TopoDS_Shape.class);
 					shapeList.add(shape);
 					return shape;
 				}
+				
 				//intersection
 				if (!s1empty) shapeList.get(i).setShape(s1, TopoDS_Shape.class);
+				
 				if (!s2empty) {
-					DrawShapeModel commonShape = new DrawShapeModelImpl(s.getType(), s2, s.getVisualSettings());
-					this.commonList.add(commonShape);
-					shapeList.add(commonShape);
+					VisualShape geometryShape = new VisualShapeImpl(s.getType(), s2, s.getVisualSettings());
+					this.commonList.add(geometryShape);
+					shapeList.add(geometryShape);
 				}
+				
 				if (!s3empty) {
-					DrawShapeModel toReturn = checkIntersection(new DrawShapeModelImpl(shape.getType(), s3, shape.getVisualSettings()));
+					VisualShape toReturn = checkIntersection(new VisualShapeImpl(shape.getType(), s3, shape.getVisualSettings()));
 					toReturn.setCutted(true);
 					return toReturn;
 				}
+				
 				return null;
  					
 			}
 			i++;
 		}
+		
 		shapeList.add(shape);
 		return shape;
 	}
 	
-	public ArrayList<DrawShapeModel> getCommon() {
+	public ArrayList<VisualShape> getCommon() {
 		return commonList;
 	}
 	
-	public void delete(DrawShapeModel s) {
+	public void delete(VisualShape s) {
 		shapeList.remove(s);
 	}
 	
-	public void delete(ArrayList<DrawShapeModel> delShapes) {
-		for (DrawShapeModel s: delShapes) {
+	public void delete(ArrayList<VisualShape> delShapes) {
+		for (VisualShape s: delShapes) {
 			delete(s);
 		}
 	}
 	
-	public void delete(DrawShapeModel[] delShapes) {
-		for (DrawShapeModel s: delShapes) {
+	public void delete(VisualShape[] delShapes) {
+		for (VisualShape s: delShapes) {
 			delete(s);
 		}
 	}
 	
 	public void load(String fileName) {
-		BRep_Builder bb=new BRep_Builder();
-		TopoDS_Shape s = BRepTools.read(fileName, bb);
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.COMPOUND, s, vs);
+
+		final GeometryShape geometryShape = geometryShapeManager.load(fileName);
+		final VisualShape shape = visualShapeManager.create(Shape.COMPOUND, geometryShape, vs);
+
 		explode(shape);		
 	}
 	
 	public void save(String fileName) {
-		BRep_Builder bb=new BRep_Builder();
-		TopoDS_Compound compound=new TopoDS_Compound();
-		bb.makeCompound(compound);
-		for (DrawShapeModel s : shapeList)
-			bb.add(compound, s.getShape2(TopoDS_Shape.class));
-		BRepTools.write(compound, fileName);
 		
-//		shapeModelFactory.save(shapes, fileName);
-
+		final List<GeometryShape> geometryShapeList = new ArrayList<GeometryShape>();
+		for (VisualShape s : shapeList) {
+			geometryShapeList.add(s.getGeometryShape());
+		}
+		
+		geometryShapeManager.save(geometryShapeList, fileName);
 	}
 	
-	public void explode(DrawShapeModel s) {
-		TopExp_Explorer explorer = new TopExp_Explorer();
+	public void addToShapeList(final List<GeometryShape> geometryShapes, final int type, final VisualSettings vs) {
+		
+		if(geometryShapes == null) {
+			return;
+		}
+		
+		for (int i = 0; i < geometryShapes.size(); i++) {
+			final VisualShape visualShape = visualShapeManager.create(type, geometryShapes.get(i), vs);
+			add(visualShape);
+		}
+	}
+	
+	public void explode(VisualShape s) {
+		
 		if (s.getType() == Shape.COMPOUND) {
+		
 			shapeList.remove(s);
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Solid)) continue; // should not happen!
-				TopoDS_Solid solid = (TopoDS_Solid)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.SOLID, solid, s.getVisualSettings());
-				shapeList.add(shape);
-			}
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.FACE, TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Face)) continue; // should not happen!
-				TopoDS_Face face = (TopoDS_Face)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, s.getVisualSettings());
-				shapeList.add(shape);
-			}
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE, TopAbs_ShapeEnum.FACE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-				TopoDS_Edge edge = (TopoDS_Edge)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.EDGE, edge, s.getVisualSettings());
-				shapeList.add(shape);
-			}
+			
+			final List<GeometryShape> solidGeometryShapes = geometryShapeManager.explodeSolid(s.getGeometryShape());
+			final List<GeometryShape> faceGeometryShapes = geometryShapeManager.explodeFace(s.getGeometryShape());
+			final List<GeometryShape> edgeGeometryShapes = geometryShapeManager.explodeEdge(s.getGeometryShape());
+			
+			addToShapeList(solidGeometryShapes, Shape.SOLID, s.getVisualSettings());
+			addToShapeList(faceGeometryShapes, Shape.FACE, s.getVisualSettings());
+			addToShapeList(edgeGeometryShapes, Shape.EDGE, s.getVisualSettings());
 		}
 		
 		if (s.getType() == Shape.SOLID) {
+			
 			shapeList.remove(s);
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.FACE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Face)) continue; // should not happen!
-				TopoDS_Face face = (TopoDS_Face)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, s.getVisualSettings());
-				shapeList.add(shape);
-			}
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-				TopoDS_Edge edge = (TopoDS_Edge)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.EDGE, edge, s.getVisualSettings());
-				shapeList.add(shape);
-			}
+			
+			final List<GeometryShape> faceGeometryShapes = geometryShapeManager.explodeFace(s.getGeometryShape());
+			final List<GeometryShape> edgeGeometryShapes = geometryShapeManager.explodeEdge(s.getGeometryShape());
+			
+			addToShapeList(faceGeometryShapes, Shape.FACE, s.getVisualSettings());
+			addToShapeList(edgeGeometryShapes, Shape.EDGE, s.getVisualSettings());
 		}
 		
 		if (s.getType() == Shape.FACE) {
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-				TopoDS_Edge edge = (TopoDS_Edge)sh;
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.EDGE, edge, s.getVisualSettings());
-				shapeList.add(shape);
-			}
+			
+			final List<GeometryShape> faceGeometryShapes = geometryShapeManager.explodeFace(s.getGeometryShape());
+			
+			addToShapeList(faceGeometryShapes, Shape.FACE, s.getVisualSettings());
 		}
-		
 	}
 	
-	public DrawShapeModel getEdges(DrawShapeModel s) {
-		TopExp_Explorer explorer = new TopExp_Explorer();		
-		TopoDS_Wire wire = null;
-		for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-		{						
-			TopoDS_Shape line = explorer.current();
-			if (!(line instanceof TopoDS_Edge)) continue; // should not happen!
-			if (wire == null) wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire((TopoDS_Edge)line).shape();
-			else wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(wire, (TopoDS_Edge)line).shape();														
-		}	
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.EDGE, wire, s.getVisualSettings());
+	public VisualShape getEdges(VisualShape s) {
+		
+		final GeometryShape geometryShape = geometryShapeManager.getEdges(s.getGeometryShape());
+		final VisualShape shape = visualShapeManager.create(Shape.EDGE, geometryShape, s.getVisualSettings());
+		
 		shapeList.add(shape);
 		return shape;		
 	}
@@ -289,17 +287,13 @@ public class DrawModelImpl implements DrawModel {
 	}
 	
 	private void setPos(double x, double y, double z) {
-		position.setX(x);
-		position.setY(y);
-		position.setZ(z);		
+		position.setXYZ(x, y, z);
 	}
 	
 	public void setDirection(double x, double y, double z) {
 		double r = Math.sqrt(x*x+y*y+z*z);
 		if (r < 1E-10) return;
-		direction.setX(x/r);
-		direction.setY(y/r);
-		direction.setZ(z/r);
+		direction.setXYZ(x/r, y/r, z/r);
 	}
 	
 	public void moveTo(double x, double y, double z) {
@@ -319,56 +313,54 @@ public class DrawModelImpl implements DrawModel {
 				position.getZ() + z);
 	}
 	
-	public DrawShapeModel addMesh(Mesh m) {		
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.MESH, m, vs);
+	public VisualShape addMesh(Mesh m) {		
+		VisualShape shape = new VisualShapeImpl(Shape.MESH, m, vs);
 		shapeList.add(shape);
 		return shape;
 	}
 	
-	public DrawShapeModel lineTo(double x, double y, double z) {		
-		TopoDS_Edge line =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{position.getX(),position.getY(),position.getZ()},
-				new double[]{x,y,z}
-				).shape();
+	public VisualShape lineTo(double x, double y, double z) {		
 		
-		DrawShapeModel shape = null;
+		final GeometryShape lineGeometryShape = geometryShapeManager.lineTo(position, x, y, z);
+		
+		VisualShape shape = null;
+		
 		if (lastEdge == null) {
-			TopoDS_Wire wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
-					line
-					).shape();
-			shape = new DrawShapeModelImpl(Shape.EDGE, wire, vs);
+			
+			final GeometryShape geometryShape = geometryShapeManager.wire(lineGeometryShape);
+			shape = visualShapeManager.create(Shape.EDGE, geometryShape, vs);
+			
 			lastEdge = add(shape);
 			firstPoint.set(position);
-		}
-		else {
+		} else {
 			shapeList.remove(lastEdge);
-			TopoDS_Wire wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
-					(TopoDS_Wire)lastEdge.getShape2(TopoDS_Shape.class),
-					line
-					).shape();
-			shape = new DrawShapeModelImpl(Shape.EDGE, wire, vs);
-			lastEdge = add(shape);
 			
+			final GeometryShape geometryShape = geometryShapeManager.wire(lastEdge.getGeometryShape(), lineGeometryShape);
+			shape = visualShapeManager.create(Shape.EDGE, geometryShape, vs);
+
+			lastEdge = add(shape);
 		}
 						
 		setPos(x,y,z);
+		
 		if (Math.sqrt((firstPoint.getX()-x)*(firstPoint.getX()-x)+(firstPoint.getY()-y)*(firstPoint.getY()-y)+(firstPoint.getZ()-z)*(firstPoint.getZ()-z)) < 1E-6) {
 			return makeFace();
 		}
+		
 		return shape;		
 	}
 	
-	public DrawShapeModel lineTo(Point3d p) {
+	public VisualShape lineTo(Point3d p) {
 		return lineTo(p.x,p.y,p.z);
 	}
 	
-	public DrawShapeModel line(double l) {
+	public VisualShape line(double l) {
 		return lineTo(position.getX() + direction.getX()*l,
 				position.getY() + direction.getY()*l,
 				position.getZ() + direction.getZ()*l);
 	}
 	
-	public DrawShapeModel line(double x, double y, double z) {
+	public VisualShape line(double x, double y, double z) {
 		return lineTo(position.getX() + x,
 				position.getY() + y,
 				position.getZ() + z);
@@ -378,15 +370,20 @@ public class DrawModelImpl implements DrawModel {
 		lastEdge = null;
 	}
 	
-	private DrawShapeModel makeFace() {
+	private VisualShape makeFace() {
+		
 		shapeList.remove(lastEdge);
-		TopoDS_Face face=(TopoDS_Face) new BRepBuilderAPI_MakeFace((TopoDS_Wire)lastEdge.getShape2(TopoDS_Shape.class)).shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, vs);
+		
+		final GeometryShape geometryShape = geometryShapeManager.makeFace(lastEdge.getGeometryShape());
+		
+		final VisualShape shape = visualShapeManager.create(Shape.FACE, geometryShape, vs);
+		
 		newLine();
+		
 		return add(shape);
 	}
 	
-	public DrawShapeModel close() {
+	public VisualShape close() {
 		return lineTo(firstPoint.getX(),firstPoint.getY(),firstPoint.getZ());
 		
 //		if (lastEdge.cutted) return null;
@@ -397,67 +394,39 @@ public class DrawModelImpl implements DrawModel {
 //		return makeFace();
 	}
 	
-	public DrawShapeModel triangle(Point3d a, Point3d b, Point3d c) {
-		TopoDS_Edge line1 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{a.x,a.y,a.z},
-				new double[]{b.x,b.y,b.z}
-				).shape();
-		TopoDS_Edge line2 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{b.x,b.y,b.z},
-				new double[]{c.x,c.y,c.z}
-				).shape();
-		TopoDS_Edge line3 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{c.x,c.y,c.z},
-				new double[]{a.x,a.y,a.z}
-				).shape();
-		TopoDS_Wire wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
-				line1, line2, line3
-				).shape();
-		TopoDS_Face face=(TopoDS_Face) new BRepBuilderAPI_MakeFace(wire, true).shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, vs);
+	public VisualShape triangle(Coordinate a, Coordinate b, Coordinate c) {
+		
+		final GeometryShape face = geometryShapeManager.triangle(a, b, c);
+		
+		final VisualShape shape = visualShapeManager.create(Shape.FACE, face, vs);
+		
 		return add(shape);
 	}
 	
-	public DrawShapeModel quadrangle(Point3d a, Point3d b, Point3d c, Point3d d) {
-		TopoDS_Edge line1 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{a.x,a.y,a.z},
-				new double[]{b.x,b.y,b.z}
-				).shape();
-		TopoDS_Edge line2 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{b.x,b.y,b.z},
-				new double[]{c.x,c.y,c.z}
-				).shape();
-		TopoDS_Edge line3 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{c.x,c.y,c.z},
-				new double[]{d.x,d.y,d.z}
-				).shape();
-		TopoDS_Edge line4 =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{d.x,d.y,d.z},
-				new double[]{a.x,a.y,a.z}
-				).shape();
-		TopoDS_Wire wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
-				line1, line2, line3, line4
-				).shape();
-		TopoDS_Face face=(TopoDS_Face) new BRepBuilderAPI_MakeFace(wire).shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, vs);
+	public VisualShape quadrangle(Coordinate a, Coordinate b, Coordinate c, Coordinate d) {
+		
+		final GeometryShape face = geometryShapeManager.quadrangle(a, b, c, d);
+		
+		final VisualShape shape = visualShapeManager.create(Shape.FACE, face, vs);
+		
 		return add(shape);
 	}
 	
-	public DrawShapeModel rectangleXY(double dx, double dy) {		
+	public VisualShape rectangleXY(double dx, double dy) {		
 		line(dx,0,0);
 		line(0,dy,0);
 		line(-dx,0,0);
 		return close();		
 	}
 	
-	public DrawShapeModel rectangleXZ(double dx, double dz) {		
+	public VisualShape rectangleXZ(double dx, double dz) {		
 		line(dx,0,0);
 		line(0,0,dz);
 		line(-dx,0,0);
 		return close();		
 	}
 	
-	public DrawShapeModel rectangleYZ(double dy, double dz) {		
+	public VisualShape rectangleYZ(double dy, double dz) {		
 		line(0,dy,0);
 		line(0,0,dz);
 		line(0,-dy,0);
@@ -476,37 +445,26 @@ public class DrawModelImpl implements DrawModel {
 //		return null;
 //	}
 	
-	public DrawShapeModel extrude(DrawShapeModel s, double h) {
-		TopExp_Explorer explorer = new TopExp_Explorer();
+	public VisualShape extrude(VisualShape s, double h) {
+		
 		if (s.getType() == Shape.FACE) {
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.FACE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Face)) continue; // should not happen!
-				TopoDS_Face face = (TopoDS_Face)sh;
-				TopoDS_Solid solid = (TopoDS_Solid) new BRepPrimAPI_MakePrism(
-						face, 
-						new double[]{direction.getX()*h, direction.getY()*h, direction.getZ()*h}).shape();
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.SOLID, solid, s.getVisualSettings());
-				shapeList.remove(s);
-				return add(shape);
-			}
+		
+			final GeometryShape geometryShape = geometryShapeManager.extrudeFace(direction, s.getGeometryShape(), h);
+			final VisualShape visualShape = visualShapeManager.create(Shape.SOLID, geometryShape, s.getVisualSettings());
+			
+			shapeList.remove(s);
+			return add(visualShape);
 		}
 		
 		if (s.getType() == Shape.EDGE) {
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-				TopoDS_Edge edge = (TopoDS_Edge)sh;
-				TopoDS_Face face = (TopoDS_Face) new BRepPrimAPI_MakePrism(
-						edge, 
-						new double[]{direction.getX()*h, direction.getY()*h, direction.getZ()*h}).shape();
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, s.getVisualSettings());
-				shapeList.remove(s);
-				return add(shape);
-			}
+			
+			final GeometryShape geometryShape = geometryShapeManager.extrudeEdge(direction, s.getGeometryShape(), h);
+			final VisualShape visualShape = visualShapeManager.create(Shape.FACE, geometryShape, s.getVisualSettings());
+			
+			shapeList.remove(s);
+			return add(visualShape);
 		}
+
 		return null;
 	}
 	
@@ -525,215 +483,208 @@ public class DrawModelImpl implements DrawModel {
 //		return null;
 //	}
 	
-	public DrawShapeModel revolve(DrawShapeModel s, double angle) {
-		TopExp_Explorer explorer = new TopExp_Explorer();
+	public VisualShape revolve(VisualShape s, double angle) {
+		
 		if (s.getType() == Shape.FACE) {
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.FACE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Face)) continue; // should not happen!
-				TopoDS_Face face = (TopoDS_Face)sh;
-				TopoDS_Solid solid = (TopoDS_Solid) new BRepPrimAPI_MakeRevol(
-						face, 
-						new double[]{position.getX(),position.getY(),position.getZ(),
-								     direction.getX(), direction.getY(), direction.getZ()},
-								     angle).shape();
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.SOLID, solid, s.getVisualSettings());
-				shapeList.remove(s);
-				return add(shape);
-			}
+			
+			final GeometryShape geometryShape = geometryShapeManager.revolveFace(position, direction, s.getGeometryShape(), angle);
+			final VisualShape visualShape = visualShapeManager.create(Shape.SOLID, geometryShape, s.getVisualSettings());
+			
+			shapeList.remove(s);
+			return add(visualShape);
 		}
 				
 		if (s.getType() == Shape.EDGE) {
-			for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-			{						
-				TopoDS_Shape sh = explorer.current();
-				if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-				TopoDS_Edge edge = (TopoDS_Edge)sh;
-				TopoDS_Face face = (TopoDS_Face) new BRepPrimAPI_MakeRevol(
-						edge, 
-						new double[]{position.getX(),position.getY(),position.getZ(),
-								     direction.getX(), direction.getY(), direction.getZ()},
-								     angle).shape();
-				DrawShapeModel shape = new DrawShapeModelImpl(Shape.FACE, face, s.getVisualSettings());
-				shapeList.remove(s);
-				return add(shape);
-			}
+
+			final GeometryShape geometryShape = geometryShapeManager.revolveEdge(position, direction, s.getGeometryShape(), angle);
+			final VisualShape visualShape = visualShapeManager.create(Shape.FACE, geometryShape, s.getVisualSettings());
+
+			shapeList.remove(s);
+			return add(visualShape);
 		}
+		
 		return null;
 	}
 	
-	public DrawShapeModel fillet(DrawShapeModel s, double radius) {
+	public VisualShape fillet(VisualShape s, double radius) {
 		shapeList.remove(s);
-		DrawShapeModel last = null;
-		TopExp_Explorer explorer = new TopExp_Explorer();
-		for (explorer.init(s.getShape2(TopoDS_Shape.class), TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next()) {
-			BRepFilletAPI_MakeFillet fillet = new BRepFilletAPI_MakeFillet(s.getShape2(TopoDS_Shape.class));
-			TopExp_Explorer eexplorer = new TopExp_Explorer();
-			for (eexplorer.init((TopoDS_Solid)explorer.current(), TopAbs_ShapeEnum.EDGE); eexplorer.more(); eexplorer.next()) {									
-				TopoDS_Edge edge = (TopoDS_Edge)eexplorer.current();
-//				TopExp_Explorer vexplorer = new TopExp_Explorer();
-//				for (vexplorer.init(edge, TopAbs_ShapeEnum.VERTEX); vexplorer.more(); vexplorer.next()) {
-//					TopoDS_Vertex v = (TopoDS_Vertex)vexplorer.current();
-//				
-//				}				
-				fillet.add(radius, edge);
-			}
-			DrawShapeModel shape = new DrawShapeModelImpl(Shape.SOLID, fillet.shape(), s.getVisualSettings());
-			last = add(shape);
-		}		
+		
+		VisualShape last = null;
+		
+		final List<GeometryShape> geometryShapes = geometryShapeManager.fillet(s.getGeometryShape(), radius);
+		
+		for (int i = 0; i < geometryShapes.size(); i++) {
+			
+			final VisualShape visualShape = visualShapeManager.create(Shape.SOLID, geometryShapes.get(i), s.getVisualSettings());
+			add(visualShape);
+			last = visualShape;
+		}
+		
 		return last;		
 	}
 	
-	public DrawShapeModel copy(DrawShapeModel s, double dx, double dy, double dz) {		
-		GP_Trsf trsf = new GP_Trsf();
-		trsf.setTranslation(new double[] {dx,dy,dz});
-		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(s.getShape2(TopoDS_Shape.class),trsf, true);
-		TopoDS_Shape newShape=transform.shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(s.getType(), newShape, s.getVisualSettings());		
+	public VisualShape copy(VisualShape s, double dx, double dy, double dz) {		
+		
+		final GeometryShape geometryShape = geometryShapeManager.copy(s, dx, dy, dz);
+		
+		final VisualShape shape = visualShapeManager.create(s.getType(), geometryShape, s.getVisualSettings());		
+	
 		return add(shape);		
 	}
 	
-	public DrawShapeModel[] copy(DrawShapeModel[] shapes, double dx, double dy, double dz) {		
-		GP_Trsf trsf = new GP_Trsf();
-		trsf.setTranslation(new double[] {dx,dy,dz});
-		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(trsf);
-		DrawShapeModel[] shapes1 = new DrawShapeModel[shapes.length];
+	public VisualShape[] copy(VisualShape[] shapes, double dx, double dy, double dz) {		
+		
+		final GeometryShape[] geometryShapeOriginal  = new GeometryShape[shapes.length];
 		for (int i = 0; i < shapes.length; i++) {
-			DrawShapeModel s = shapes[i];
-			transform.perform(s.getShape2(TopoDS_Shape.class), true);
-			TopoDS_Shape newShape=transform.shape();
-			DrawShapeModel shape = new DrawShapeModelImpl(s.getType(), newShape, s.getVisualSettings());		
-			add(shape);
-			shapes1[i] = shape;
-		}		
+			geometryShapeOriginal[i] = shapes[i].getGeometryShape();
+		}
+		
+		final GeometryShape[] geometryShapesCopy = geometryShapeManager.copy(geometryShapeOriginal, dx, dy, dz);
+		
+		final VisualShape[] visualShapes = new VisualShape[geometryShapesCopy.length];
+		
+		for (int i = 0; i < geometryShapesCopy.length; i++) {
+			visualShapes[i] = visualShapeManager.create(shapes[i].getType(), geometryShapesCopy[i], shapes[i].getVisualSettings());
+		}
+		
 		return shapes;
 	}
 	
-	public DrawShapeModel rotate(DrawShapeModel s, double angle) {		
-		GP_Trsf trsf = new GP_Trsf();
-		trsf.setRotation(
-				new double[]{position.getX(),position.getY(),position.getZ(),
-				         direction.getX(),direction.getY(),direction.getZ()}, angle);
-		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(s.getShape2(TopoDS_Shape.class),trsf, true);		
-		TopoDS_Shape newShape=transform.shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(s.getType(), newShape, s.getVisualSettings());
+	public VisualShape rotate(VisualShape s, double angle) {		
+		
+		final GeometryShape geometryShape = geometryShapeManager.rotate(position, direction, s.getGeometryShape(), angle);
+		final VisualShape shape = visualShapeManager.create(s.getType(), geometryShape, s.getVisualSettings());
+
 		delete(s);
 		return add(shape);		
 	}
 	
 	
-	public DrawShapeModel scale(DrawShapeModel s, double a) {		
-		GP_Trsf trsf = new GP_Trsf();		
-		double[] matrix=new double[]{
-			a, 0, 0, 0,
-			0, a, 0, 0,
-			0, 0, a, 0	
-		};
-		trsf.setValues(matrix, 0.0, 0.0);		
-		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(s.getShape2(TopoDS_Shape.class),trsf, true);		
-		TopoDS_Shape newShape=transform.shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(s.getType(), newShape, s.getVisualSettings());
+	public VisualShape scale(VisualShape s, double a) {		
+		
+		final GeometryShape geometryShape = geometryShapeManager.scale(s.getGeometryShape(), a);
+		final VisualShape shape = visualShapeManager.create(s.getType(), geometryShape, vs);
+		
 		delete(s);
 		return add(shape);		
 	}
 	
 		
-	public DrawShapeModel array(DrawShapeModel s, int n, double dx,double dy, double dz) {		
-		DrawShapeModel[] shapes = new DrawShapeModel[n-1];		
+	public VisualShape array(VisualShape s, int n, double dx,double dy, double dz) {		
+		
+		VisualShape[] shapes = new VisualShape[n-1];		
+		
 		for (int i = 1; i < n; i++) {
+			
 			shapes[i-1] = copy(s, dx*i, dy*i, dz*i);
-			if (shapes[i-1].getType() == Shape.COMPOUND) explode(shapes[i-1]); 
+			
+			if (shapes[i-1].getType() == Shape.COMPOUND) { 
+				explode(shapes[i-1]); 
+			}
 		}
-		BRep_Builder bb=new BRep_Builder();
-		TopoDS_Compound compound=new TopoDS_Compound();
-		bb.makeCompound(compound);
-		bb.add(compound, s.getShape2(TopoDS_Shape.class));
-		for (DrawShapeModel sh: shapeList) {
-			bb.add(compound, sh.getShape2(TopoDS_Shape.class));
+		
+		final List<GeometryShape> geometryShapeList = new ArrayList<GeometryShape>();
+		for (VisualShape vShape : shapeList) {
+			geometryShapeList.add(vShape.getGeometryShape());
 		}
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.COMPOUND, compound, s.getVisualSettings());
+		
+		final GeometryShape compound = geometryShapeManager.compound(s.getGeometryShape(), geometryShapeList);
+		
+		final VisualShape shape = visualShapeManager.create(Shape.COMPOUND, compound, s.getVisualSettings());
+		
 		return shape;			
 	}	
 	
 	
-	public DrawShapeModel circle(double r) {
+	public VisualShape circle(double r) {
 		
-		final CommonShape commonShape = commonShapeModelManager.circle(position, direction, r);
+		final GeometryShape geometryShape = geometryShapeManager.circle(position, direction, r);
 		
-		final DrawShapeModel shape = drawShapeModelManager.create(Shape.FACE, commonShape, vs);
-		
-		return add(shape); 
-	}
-	
-	public DrawShapeModel box(double dx, double dy, double dz) {
-		
-		final CommonShape commonShape = commonShapeModelManager.box(position, dx, dy, dz);
-		
-		final DrawShapeModel shape = drawShapeModelManager.create(Shape.SOLID, commonShape, vs);
+		final VisualShape shape = visualShapeManager.create(Shape.FACE, geometryShape, vs);
 		
 		return add(shape); 
 	}
 	
-	public DrawShapeModel cylinder(double r, double h, double angle) {
+	public VisualShape box(double dx, double dy, double dz) {
 		
-		final CommonShape commonShape = commonShapeModelManager.cylinder(position, direction, r, h, angle);
+		final GeometryShape geometryShape = geometryShapeManager.box(position, dx, dy, dz);
 		
-		final DrawShapeModel shape = drawShapeModelManager.create(Shape.SOLID, commonShape, vs);
+		final VisualShape shape = visualShapeManager.create(Shape.SOLID, geometryShape, vs);
 		
 		return add(shape); 
 	}
 	
-	public DrawShapeModel torus(double r1, double r2) {
-		TopoDS_Shape cylinder=new BRepPrimAPI_MakeTorus(
-				new double[]{position.getX(),position.getY(),position.getZ(),
-						     direction.getX(),direction.getY(),direction.getZ()},
-				r1, r2
-				).shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(Shape.SOLID, cylinder, vs);
+	public VisualShape cylinder(double r, double h, double angle) {
+		
+		final GeometryShape geometryShape = geometryShapeManager.cylinder(position, direction, r, h, angle);
+		
+		final VisualShape shape = visualShapeManager.create(Shape.SOLID, geometryShape, vs);
+		
+		return add(shape); 
+	}
+	
+	public VisualShape torus(double r1, double r2) {
+		
+		final GeometryShape geometryShape = geometryShapeManager.torus(position, direction, r1, r2);
+		
+		final VisualShape shape = visualShapeManager.create(Shape.SOLID, geometryShape, vs);
+		
 		return add(shape); 
 	}
 
 	
-	public DrawShapeModel cone(double baseRadius, double topRadius, double h, double angle) {
+	public VisualShape cone(double baseRadius, double topRadius, double h, double angle) {
 		
-		final CommonShape commonShape = commonShapeModelManager.cone(position, direction, baseRadius, topRadius, h, angle);
+		final GeometryShape geometryShape = geometryShapeManager.cone(position, direction, baseRadius, topRadius, h, angle);
 		
-		final DrawShapeModel shape = drawShapeModelManager.create(Shape.SOLID, commonShape, vs);
+		final VisualShape shape = visualShapeManager.create(Shape.SOLID, geometryShape, vs);
 		
 		return add(shape); 
 	}
 	
-	public DrawShapeModel common(DrawShapeModel s1, DrawShapeModel s2) {
+	public VisualShape common(VisualShape s1, VisualShape s2) {
 		shapeList.remove(s1);
 		shapeList.remove(s2);
-		TopoDS_Shape s = new BRepAlgoAPI_Common(s1.getShape2(TopoDS_Shape.class), s2.getShape2(TopoDS_Shape.class)).shape();
-		if (OCCUtils.isEmpty(s)) return null;
+		
+		final GeometryShape geometryShape = geometryShapeManager.common(s1.getGeometryShape(), s2.getGeometryShape());
+		
+		if(geometryShape == null) {
+			return null;
+		}
+		
 		int newType = s1.getType();
 		if (s2.getType() < newType) newType = s2.getType();
-		DrawShapeModel shape = new DrawShapeModelImpl(newType, s, vs);
+		
+		final VisualShape shape = visualShapeManager.create(newType, geometryShape, vs);
+		
 		shapeList.add(shape);
 		return shape;
 	}
 	
-	public DrawShapeModel cut(DrawShapeModel s1, DrawShapeModel s2) {
+	public VisualShape cut(VisualShape s1, VisualShape s2) {
 		if (s1.getType() > s2.getType()) return null;
 		shapeList.remove(s1);
 		shapeList.remove(s2);
-		TopoDS_Shape s = new BRepAlgoAPI_Cut(s1.getShape2(TopoDS_Shape.class), s2.getShape2(TopoDS_Shape.class)).shape();
-		if (OCCUtils.isEmpty(s)) return null;
-		DrawShapeModel shape = new DrawShapeModelImpl(s1.getType(), s, s1.getVisualSettings());
+		
+		final GeometryShape geometryShape = geometryShapeManager.cut(s1.getGeometryShape(), s2.getGeometryShape());
+		final VisualShape shape = visualShapeManager.create(s1.getType(), geometryShape, s1.getVisualSettings());
+		
 		shapeList.add(shape);
 		return shape;
 	}
 	
-	public DrawShapeModel fuse(DrawShapeModel s1, DrawShapeModel s2) {
+	public VisualShape fuse(VisualShape s1, VisualShape s2) {
 		if (s1.getType() != s2.getType()) return null;
 		shapeList.remove(s1);
 		shapeList.remove(s2);
-		TopoDS_Shape s = new BRepAlgoAPI_Fuse(s1.getShape2(TopoDS_Shape.class), s2.getShape2(TopoDS_Shape.class)).shape();
-		if (OCCUtils.isEmpty(s)) return null;
-		DrawShapeModel shape = new DrawShapeModelImpl(s1.getType(), s, s1.getVisualSettings());		
+		
+		final GeometryShape geometryShape = geometryShapeManager.fuse(s1.getGeometryShape(), s2.getGeometryShape());
+		if(geometryShape == null) {
+			return null;
+		}
+		
+		final VisualShape shape = visualShapeManager.create(s1.getType(), geometryShape, vs);
+		
 		shapeList.add(shape);				
 		return shape;
 	}
@@ -757,22 +708,22 @@ public class DrawModelImpl implements DrawModel {
 	}
 	
 	public void setMeshSize(double size) {
-		for (DrawShapeModel s : shapeList) s.setMeshSize(size);		
+		for (VisualShape s : shapeList) s.setMeshSize(size);		
 	}
 	
-	public void setMeshSize(DrawShapeModel s, double size) {
+	public void setMeshSize(VisualShape s, double size) {
 		s.setMeshSize(size);		
 	}
 	
-	public void setMeshSize(DrawShapeModel s, int n) {
+	public void setMeshSize(VisualShape s, int n) {
 		s.setMeshSize(n);		
 	}
 	
-	public void setMeshSize(DrawShapeModel s, double x, double y, double z, int n) {
+	public void setMeshSize(VisualShape s, double x, double y, double z, int n) {
 		s.setMeshSize(x,y,z,n);		
 	}
 	
-	public void setMeshSize(DrawShapeModel s, double x, double y, double z, double size) {
+	public void setMeshSize(VisualShape s, double x, double y, double z, double size) {
 		s.setMeshSize(x,y,z,size);		
 	}
 	
@@ -781,7 +732,7 @@ public class DrawModelImpl implements DrawModel {
 //	}
 	
 	public void meshAll() {			
-		for (DrawShapeModel s : shapeList) s.mesh();
+		for (VisualShape s : shapeList) s.mesh();
 	}	
 	
 	public void meshSelected() {		
@@ -795,14 +746,13 @@ public class DrawModelImpl implements DrawModel {
 		}		
 	}
 	
-	public void meshShape(DrawShapeModel s) {			
+	public void meshShape(VisualShape s) {			
 		addMesh(Mesher.createMesh(s));
 		shapeList.remove(s);
 	}
-
 	
 	
-	public DrawShapeModel add(DrawShapeModel shape) {
+	public VisualShape add(VisualShape shape) {
 		if (virtualDrawingMode) return shape;
 		if (checkIntersection) commonList.clear();
 		if (checkIntersection) return checkIntersection(shape); else shapeList.add(shape);
@@ -813,20 +763,9 @@ public class DrawModelImpl implements DrawModel {
 		return shape;
 	}
 
-	
-	public DrawShapeModel copy2(DrawShapeModel s, double dx, double dy, double dz) {		
-		GP_Trsf trsf = new GP_Trsf();
-		trsf.setTranslation(new double[] {dx,dy,dz});
-		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(s.getShape2(TopoDS_Shape.class),trsf, true);
-		TopoDS_Shape newShape=transform.shape();
-		DrawShapeModel shape = new DrawShapeModelImpl(s.getType(), newShape, s.getVisualSettings());		
-		return add(shape);		
-	}
-
-	public DrawShapeModel[] getPicture2() {
-		DrawShapeModel[] arr = new DrawShapeModel[shapeList.size()];
+	public VisualShape[] getPicture() {
+		VisualShape[] arr = new VisualShape[shapeList.size()];
 		for (int i = 0; i < shapeList.size(); i++) arr[i] = shapeList.get(i);
 		return arr;
 	}
-	
 }

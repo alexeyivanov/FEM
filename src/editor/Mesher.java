@@ -88,7 +88,7 @@ public class Mesher {
 		return m;
 	}
 	
-	public static Mesh createMesh(DrawShapeModel s) {
+	public static Mesh createMesh(VisualShape s) {
 		Mesh m = new Mesh();
 		
 		CreateGmodel(TopoDS_Shape.getCPtr(s.getShape2(TopoDS_Shape.class)));

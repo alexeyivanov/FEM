@@ -2,31 +2,40 @@ package editor;
 
 import java.awt.Color;
 
+/**
+ * DrawModel
+ *  - operates with data for visualisation
+ *  - keep data for visualisation. 
+ *  
+ * Input data
+ *  - primitives
+ *  - VisualShape objects
+ */
 public interface DrawModel {
 	
-	CommonShapeModelManager getCommonShapeModelManager();
+	GeometryShapeManager getGeometryShapeManager();
 
-	void setCommonShapeModelManager(CommonShapeModelManager shapeModelManager);
+	void setGeometryShapeManager(GeometryShapeManager geometryShapeManager);
 
-	DrawShapeModelManager getDrawShapeModelManager();
+	VisualShapeManager getDrawShapeModelManager();
 
-	void setDrawShapeModelManager(DrawShapeModelManager drawShapeModelManager);
+	void setDrawShapeModelManager(VisualShapeManager drawShapeModelManager);
 	
-	DrawShapeModel add(final DrawShapeModel shape);
+	VisualShape add(final VisualShape shape);
 	
 	void setLineWidth(final float w);
 	
 	void setCheckIntersection(boolean v);
 	
-	DrawShapeModel circle(double r);
+	VisualShape circle(double r);
 	
 	void setFaceColor(Color c);
 	
-	DrawShapeModel cylinder(double r, double h, double angle);
+	VisualShape cylinder(double r, double h, double angle);
 	
 	void save(String fileName);
 	
-	DrawShapeModel[] getPicture2();
+	VisualShape[] getPicture();
 	
 	void deleteSelected();
 	
@@ -34,17 +43,17 @@ public interface DrawModel {
 
 	void setMeshSize(double d);
 	
-	DrawShapeModel fuse(DrawShapeModel s1, DrawShapeModel s2);
+	VisualShape fuse(VisualShape s1, VisualShape s2);
 	
-	DrawShapeModel cone(double baseRadius, double topRadius, double h, double angle);
+	VisualShape cone(double baseRadius, double topRadius, double h, double angle);
 	
 	void move(double x, double y, double z);
 	
-	DrawShapeModel cut(DrawShapeModel s1, DrawShapeModel s2);
+	VisualShape cut(VisualShape s1, VisualShape s2);
 	
-	DrawShapeModel copy(DrawShapeModel s, double dx, double dy, double dz);
+	VisualShape copy(VisualShape s, double dx, double dy, double dz);
 	
-	void delete(DrawShapeModel s);
+	void delete(VisualShape s);
 	
 	void moveTo(double x, double y, double z);
 	
@@ -52,8 +61,8 @@ public interface DrawModel {
 	
 	void setDirection(double x, double y, double z);
 	
-	DrawShapeModel box(double dx, double dy, double dz);
+	VisualShape box(double dx, double dy, double dz);
 	
-	DrawShapeModel array(DrawShapeModel s, int n, double dx,double dy, double dz);
+	VisualShape array(VisualShape s, int n, double dx,double dy, double dz);
 
 }
