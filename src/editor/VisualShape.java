@@ -3,6 +3,7 @@ package editor;
 /**
  * VisualShape
  *  - keep geometry data + visual settings for this object.
+ *  - keep implicitly internal representation of shape, e.g. occ shape. 
  */
 public interface VisualShape {
 
