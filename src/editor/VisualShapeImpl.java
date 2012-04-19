@@ -83,7 +83,7 @@ public class VisualShapeImpl implements VisualShape {
 		edges = new ArrayList<Shape3D>();
 		edgesNode = Java3DUtils.createEdges(shape.getEdgeArrays(), edges, vs);
 	}
-	
+
 	public void setShape(TopoDS_Shape shape) {
 		
 		
@@ -101,7 +101,6 @@ public class VisualShapeImpl implements VisualShape {
 		edgesNode = Java3DUtils.createEdges(edgeArrays, edges, vs);
 	}
 	
-
 	public VisualShapeImpl(int type, Mesh mesh, VisualSettings vs) {
 		this.type = type;		
 		this.vs = new VisualSettings(vs);
@@ -312,6 +311,17 @@ public class VisualShapeImpl implements VisualShape {
 		
 	}
 
+	@Override
+	public boolean haveCommon(VisualShape s) {
+		// TODO Auto-generated method stub
+		
+		if (!this.getBounds().intersect(s.getBounds(Bounds.class))) {
+			return false;		
+		}
+		
+		return true;
+	}
+	
 	@Override
 	public <T> T haveCommon(VisualShape s, Class<T> clazz) {
 		// TODO Auto-generated method stub

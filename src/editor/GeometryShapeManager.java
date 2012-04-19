@@ -23,6 +23,8 @@ public interface GeometryShapeManager {
 	
 	GeometryShape common(GeometryShape s1, GeometryShape s2);
 	
+	GeometryShape haveCommon(GeometryShape s1, int s1Type, GeometryShape s2, int s2Type);
+	
 	GeometryShape getEdges(GeometryShape shape);
 	
 	GeometryShape lineTo(Coordinate position, double x, double y, double z);
@@ -37,11 +39,9 @@ public interface GeometryShapeManager {
 	
 	GeometryShape quadrangle(Coordinate a, Coordinate b, Coordinate c, Coordinate d);
 	
-	GeometryShape copy(GeometryShape shape, Coordinate translation);
-	
 	GeometryShape[] copy(GeometryShape[] shapes, double dx, double dy, double dz);
 	
-	GeometryShape copy(VisualShape s, double dx, double dy, double dz);
+	GeometryShape copy(GeometryShape s, double dx, double dy, double dz);
 	
 	GeometryShape rotate(Coordinate position, Coordinate direction, GeometryShape s, double angle);
 	
@@ -74,4 +74,6 @@ public interface GeometryShapeManager {
 	List<GeometryShape> explodeEdge(GeometryShape s);
 	
 	GeometryShape compound(GeometryShape s, List<GeometryShape> shapeList);
+	
+	boolean isEmpty(GeometryShape s);
 }

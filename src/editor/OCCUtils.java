@@ -34,12 +34,19 @@ import editor.Shape.Vertex;
 public class OCCUtils {
 
 	public static boolean isEmpty(TopoDS_Shape s) {
-		if (s == null) return true;
-		TopExp_Explorer explorer = new TopExp_Explorer();
+		
+		if (s == null) {
+			return true;
+		}
+		
+		final TopExp_Explorer explorer = new TopExp_Explorer();
+		
 		explorer.init(s, TopAbs_ShapeEnum.FACE); 
 		boolean haveFaces = explorer.more();
+		
 		explorer.init(s, TopAbs_ShapeEnum.EDGE);
 		boolean haveEdges = explorer.more();
+		
 		return !(haveFaces || haveEdges);
 	}
 	

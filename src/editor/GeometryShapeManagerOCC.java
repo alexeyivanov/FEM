@@ -79,11 +79,11 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 		bb.makeCompound(compound);
 
 		for (final GeometryShape s : shapes) {
-			
-			if(s == null) {
+
+			if (s == null) {
 				continue;
 			}
-			
+
 			bb.add(compound, s.getIntertalShape(TopoDS_Shape.class));
 		}
 
@@ -127,6 +127,17 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 	}
 
 	@Override
+	public GeometryShape haveCommon(GeometryShape s1, int s1Type,
+			GeometryShape s2, int s2Type) {
+
+		final TopoDS_Shape shape = OCCUtils.haveCommon(
+				s1.getIntertalShape(TopoDS_Shape.class), s1Type,
+				s2.getIntertalShape(TopoDS_Shape.class), s2Type);
+
+		return buildGeometryShape(shape);
+	}
+
+	@Override
 	public GeometryShape cut(GeometryShape s1, GeometryShape s2) {
 
 		final TopoDS_Shape shape = new BRepAlgoAPI_Cut(
@@ -147,47 +158,51 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 	@Override
 	public GeometryShape getEdges(GeometryShape shape) {
 
-		TopExp_Explorer explorer = new TopExp_Explorer();		
+		TopExp_Explorer explorer = new TopExp_Explorer();
 		TopoDS_Wire wire = null;
-		for (explorer.init(shape.getIntertalShape(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next())
-		{						
+		for (explorer.init(shape.getIntertalShape(TopoDS_Shape.class),
+				TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next()) {
 			TopoDS_Shape line = explorer.current();
-			if (!(line instanceof TopoDS_Edge)) continue; // should not happen!
-			if (wire == null) wire =  (TopoDS_Wire) new BRepBuilderAPI_MakeWire((TopoDS_Edge)line).shape();
-			else wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(wire, (TopoDS_Edge)line).shape();														
-		}	
-		
+			if (!(line instanceof TopoDS_Edge))
+				continue; // should not happen!
+			if (wire == null)
+				wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
+						(TopoDS_Edge) line).shape();
+			else
+				wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(wire,
+						(TopoDS_Edge) line).shape();
+		}
+
 		return buildGeometryShape(wire);
 	}
 
 	@Override
-	public GeometryShape lineTo(Coordinate position, double x, double y, double z) {
-		
-		final TopoDS_Edge line =  (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
-				new double[]{position.getX(),position.getY(),position.getZ()},
-				new double[]{x,y,z}
-				).shape();
-		
-		
+	public GeometryShape lineTo(Coordinate position, double x, double y,
+			double z) {
+
+		final TopoDS_Edge line = (TopoDS_Edge) new BRepBuilderAPI_MakeEdge(
+				new double[] { position.getX(), position.getY(),
+						position.getZ() }, new double[] { x, y, z }).shape();
+
 		return buildGeometryShape(line);
 	}
-	
+
 	@Override
 	public GeometryShape wire(GeometryShape line) {
-		
-		TopoDS_Wire wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(line.getIntertalShape(TopoDS_Edge.class))
-				.shape();
-		
+
+		TopoDS_Wire wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
+				line.getIntertalShape(TopoDS_Edge.class)).shape();
+
 		return buildGeometryShape(wire);
 	}
-	
-		@Override
+
+	@Override
 	public GeometryShape wire(GeometryShape edge, GeometryShape line) {
 
 		TopoDS_Wire wire = (TopoDS_Wire) new BRepBuilderAPI_MakeWire(
-				(TopoDS_Wire) edge.getIntertalShape(TopoDS_Shape.class), line.getIntertalShape(TopoDS_Edge.class))
-				.shape();
-			
+				(TopoDS_Wire) edge.getIntertalShape(TopoDS_Shape.class),
+				line.getIntertalShape(TopoDS_Edge.class)).shape();
+
 		return buildGeometryShape(wire);
 	}
 
@@ -195,7 +210,8 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 	public GeometryShape makeFace(GeometryShape lastEdge) {
 
 		final TopoDS_Face face = (TopoDS_Face) new BRepBuilderAPI_MakeFace(
-				(TopoDS_Wire) lastEdge.getIntertalShape(TopoDS_Shape.class)).shape();
+				(TopoDS_Wire) lastEdge.getIntertalShape(TopoDS_Shape.class))
+				.shape();
 
 		final List<FaceMesh> faceMeshes = OCCUtils.createFaceMeshes(face);
 		final List<float[]> edgeArrays = OCCUtils.createEdgeArrays(face);
@@ -266,18 +282,12 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 	}
 
 	@Override
-	public GeometryShape copy(GeometryShape shape, Coordinate translation) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public GeometryShape copy(VisualShape s, double dx, double dy, double dz) {
+	public GeometryShape copy(GeometryShape s, double dx, double dy, double dz) {
 
 		GP_Trsf trsf = new GP_Trsf();
 		trsf.setTranslation(new double[] { dx, dy, dz });
 		BRepBuilderAPI_Transform transform = new BRepBuilderAPI_Transform(
-				s.getShape2(TopoDS_Shape.class), trsf, true);
+				s.getIntertalShape(TopoDS_Shape.class), trsf, true);
 		TopoDS_Shape newShape = transform.shape();
 
 		final List<FaceMesh> faceMeshes = OCCUtils.createFaceMeshes(newShape);
@@ -556,7 +566,7 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 
 		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class),
 				TopAbs_ShapeEnum.EDGE); explorer.more(); explorer.next()) {
-			
+
 			TopoDS_Shape sh = explorer.current();
 			if (!(sh instanceof TopoDS_Edge))
 				continue; // should not happen!
@@ -564,7 +574,7 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 			TopoDS_Face face = (TopoDS_Face) new BRepPrimAPI_MakePrism(edge,
 					new double[] { direction.getX() * h, direction.getY() * h,
 							direction.getZ() * h }).shape();
-			
+
 			final List<FaceMesh> faceMeshes = OCCUtils.createFaceMeshes(face);
 			final List<float[]> edgeArrays = OCCUtils.createEdgeArrays(face);
 
@@ -572,49 +582,52 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 					TopoDS_Shape.class);
 			break;
 		}
-		
+
 		return result;
 	}
 
 	@Override
 	public List<GeometryShape> explodeSolid(GeometryShape s) {
-		
+
 		final TopExp_Explorer explorer = new TopExp_Explorer();
-		
+
 		final List<GeometryShape> geometryShapes = new ArrayList<GeometryShape>();
-		
-		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class), TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next())
-		{						
+
+		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class),
+				TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next()) {
 			TopoDS_Shape sh = explorer.current();
-			if (!(sh instanceof TopoDS_Solid)) continue; // should not happen!
-			TopoDS_Solid solid = (TopoDS_Solid)sh;
-			
+			if (!(sh instanceof TopoDS_Solid))
+				continue; // should not happen!
+			TopoDS_Solid solid = (TopoDS_Solid) sh;
+
 			final List<FaceMesh> faceMeshes = OCCUtils.createFaceMeshes(solid);
 			final List<float[]> edgeArrays = OCCUtils.createEdgeArrays(solid);
 
-			geometryShapes.add(new GeometryShapeImpl(faceMeshes, edgeArrays, solid,
-					TopoDS_Shape.class));
+			geometryShapes.add(new GeometryShapeImpl(faceMeshes, edgeArrays,
+					solid, TopoDS_Shape.class));
 		}
-		
+
 		return geometryShapes;
 	}
 
 	@Override
 	public List<GeometryShape> explodeFace(GeometryShape s) {
-	
+
 		final TopExp_Explorer explorer = new TopExp_Explorer();
-		
+
 		final List<GeometryShape> geometryShapes = new ArrayList<GeometryShape>();
-		
-		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class), TopAbs_ShapeEnum.FACE, TopAbs_ShapeEnum.SOLID); explorer.more(); explorer.next())
-		{						
+
+		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class),
+				TopAbs_ShapeEnum.FACE, TopAbs_ShapeEnum.SOLID); explorer.more(); explorer
+				.next()) {
 			TopoDS_Shape sh = explorer.current();
-			if (!(sh instanceof TopoDS_Face)) continue; // should not happen!
-			TopoDS_Face face = (TopoDS_Face)sh;
-			
+			if (!(sh instanceof TopoDS_Face))
+				continue; // should not happen!
+			TopoDS_Face face = (TopoDS_Face) sh;
+
 			geometryShapes.add(buildGeometryShape(face));
 		}
-		
+
 		return geometryShapes;
 	}
 
@@ -622,47 +635,61 @@ public class GeometryShapeManagerOCC implements GeometryShapeManager {
 	public List<GeometryShape> explodeEdge(GeometryShape s) {
 
 		final TopExp_Explorer explorer = new TopExp_Explorer();
-		
+
 		final List<GeometryShape> geometryShapes = new ArrayList<GeometryShape>();
-		
-		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class), TopAbs_ShapeEnum.EDGE, TopAbs_ShapeEnum.FACE); explorer.more(); explorer.next())
-		{						
+
+		for (explorer.init(s.getIntertalShape(TopoDS_Shape.class),
+				TopAbs_ShapeEnum.EDGE, TopAbs_ShapeEnum.FACE); explorer.more(); explorer
+				.next()) {
 			TopoDS_Shape sh = explorer.current();
-			if (!(sh instanceof TopoDS_Edge)) continue; // should not happen!
-			TopoDS_Edge edge = (TopoDS_Edge)sh;
-			
+			if (!(sh instanceof TopoDS_Edge))
+				continue; // should not happen!
+			TopoDS_Edge edge = (TopoDS_Edge) sh;
+
 			geometryShapes.add(buildGeometryShape(edge));
 		}
-		
+
 		return geometryShapes;
 	}
 
 	@Override
 	public GeometryShape compound(GeometryShape s, List<GeometryShape> shapeList) {
-		
+
 		final BRep_Builder bb = new BRep_Builder();
 		final TopoDS_Compound compound = new TopoDS_Compound();
 		bb.makeCompound(compound);
-		
+
 		bb.add(compound, s.getIntertalShape(TopoDS_Shape.class));
-		
-		for (GeometryShape sh: shapeList) {
+
+		for (GeometryShape sh : shapeList) {
 			bb.add(compound, sh.getIntertalShape(TopoDS_Shape.class));
 		}
-		
+
 		return buildGeometryShape(compound);
 	}
-	
+
 	public GeometryShape buildGeometryShape(final TopoDS_Shape shape) {
-		
-		if(shape == null) {
+
+		if (shape == null) {
 			return null;
 		}
-		
+
 		final List<FaceMesh> faceMeshes = OCCUtils.createFaceMeshes(shape);
 		final List<float[]> edgeArrays = OCCUtils.createEdgeArrays(shape);
 
-		return new GeometryShapeImpl(faceMeshes, edgeArrays, shape, TopoDS_Shape.class);
+		return new GeometryShapeImpl(faceMeshes, edgeArrays, shape,
+				TopoDS_Shape.class);
 	}
+
+	@Override
+	public boolean isEmpty(GeometryShape s) {
+		
+		if(s == null) {
+			return true;
+		}
+		
+		return OCCUtils.isEmpty(s.getIntertalShape(TopoDS_Shape.class));
+	}
+
 	
 }

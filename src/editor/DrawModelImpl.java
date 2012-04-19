@@ -9,9 +9,6 @@ import javax.media.j3d.Texture;
 import javax.media.j3d.Texture2D;
 import javax.vecmath.Point3d;
 
-import org.jcae.opencascade.jni.BRepAlgoAPI_Cut;
-import org.jcae.opencascade.jni.TopoDS_Shape;
-
 import com.sun.j3d.utils.image.TextureLoader;
 
 import core.Coordinate;
@@ -77,59 +74,85 @@ public class DrawModelImpl implements DrawModel {
 		int i = 0;
 		
 		while (i < shapeList.size()) {
+			
 			VisualShape s = shapeList.get(i);
 			
-			TopoDS_Shape common = shape.haveCommon(s, TopoDS_Shape.class); 
+			GeometryShape common = null;
+			
+			if(shape.haveCommon(s)) {
+				common = geometryShapeManager
+						.haveCommon(shape.getGeometryShape(), shape.getType(),
+								s.getGeometryShape(), s.getType());
+			}
+			
+//			TopoDS_Shape common = shape.haveCommon(s, TopoDS_Shape.class); 
 			
 			if (common != null) {
 				
-				TopoDS_Shape s1 = null;
+				GeometryShape s1 = null;
 				
 				if (shape.getType() >= s.getType()) {
-					s1 = new BRepAlgoAPI_Cut(s.getShape2(TopoDS_Shape.class), shape.getShape2(TopoDS_Shape.class)).shape();
+//					s1 = new BRepAlgoAPI_Cut(s.getShape2(TopoDS_Shape.class), shape.getShape2(TopoDS_Shape.class)).shape();
+					s1 = geometryShapeManager.cut(s.getGeometryShape(), shape.getGeometryShape());
 				} else {
-					s1 = s.getShape2(TopoDS_Shape.class);
+//					s1 = s.getShape2(TopoDS_Shape.class);
+					s1 = s.getGeometryShape();
 				}
 				
-				TopoDS_Shape s2 = common;
-				TopoDS_Shape s3 = null;
+				GeometryShape s2 = common;
+				GeometryShape s3 = null;
 				
 				if (s.getType() >= shape.getType()) {
-					s3 = new BRepAlgoAPI_Cut(shape.getShape2(TopoDS_Shape.class), s.getShape2(TopoDS_Shape.class)).shape();
+//					s3 = new BRepAlgoAPI_Cut(shape.getShape2(TopoDS_Shape.class), s.getShape2(TopoDS_Shape.class)).shape();
+					s3 = geometryShapeManager.cut(shape.getGeometryShape(), s.getGeometryShape()); 
 				} else {
-					s3 = shape.getShape2(TopoDS_Shape.class);
+					s3 = shape.getGeometryShape();
 				}
 				
-				boolean s1empty = OCCUtils.isEmpty(s1), 
-				        s2empty = OCCUtils.isEmpty(s2),
-				        s3empty = OCCUtils.isEmpty(s3);
+				boolean s1empty = geometryShapeManager.isEmpty(s1), 
+				        s2empty = geometryShapeManager.isEmpty(s2),
+				        s3empty = geometryShapeManager.isEmpty(s3);
 				
 				if (s1empty) { // s inside shape
 					if (!s3empty) {
-						VisualShape toReturn = checkIntersection(new VisualShapeImpl(shape.getType(), s3, shape.getVisualSettings()));
+						
+						final VisualShape visualShape = visualShapeManager.create(shape.getType(), s3, shape.getVisualSettings());
+						VisualShape toReturn = checkIntersection(visualShape);
 						toReturn.setCutted(true);
+						
 						return toReturn;
 					}
 					return null;
 				}
 				
 				if (s3empty) { // shape inside s
-					if (!s1empty) shapeList.get(i).setShape(s1, TopoDS_Shape.class);
+					if (!s1empty) {
+						shapeList.get(i).setShape(s1);
+					}
+					
 					shapeList.add(shape);
+					
 					return shape;
 				}
 				
 				//intersection
-				if (!s1empty) shapeList.get(i).setShape(s1, TopoDS_Shape.class);
+				if (!s1empty) {
+					shapeList.get(i).setShape(s1);
+				}
 				
 				if (!s2empty) {
-					VisualShape geometryShape = new VisualShapeImpl(s.getType(), s2, s.getVisualSettings());
+					
+					final VisualShape geometryShape = visualShapeManager.create(s.getType(), s2, s.getVisualSettings());
+
 					this.commonList.add(geometryShape);
 					shapeList.add(geometryShape);
 				}
 				
 				if (!s3empty) {
-					VisualShape toReturn = checkIntersection(new VisualShapeImpl(shape.getType(), s3, shape.getVisualSettings()));
+					
+					final VisualShape geometryShape = visualShapeManager.create(shape.getType(), s3, shape.getVisualSettings());
+					
+					VisualShape toReturn = checkIntersection(geometryShape);
 					toReturn.setCutted(true);
 					return toReturn;
 				}
@@ -525,7 +548,7 @@ public class DrawModelImpl implements DrawModel {
 	
 	public VisualShape copy(VisualShape s, double dx, double dy, double dz) {		
 		
-		final GeometryShape geometryShape = geometryShapeManager.copy(s, dx, dy, dz);
+		final GeometryShape geometryShape = geometryShapeManager.copy(s.getGeometryShape(), dx, dy, dz);
 		
 		final VisualShape shape = visualShapeManager.create(s.getType(), geometryShape, s.getVisualSettings());		
 	
