@@ -35,6 +35,8 @@ public interface DrawModel {
 	
 	void save(String fileName);
 	
+	void load(String fileName);
+	
 	VisualShape[] getPicture();
 	
 	void deleteSelected();

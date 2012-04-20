@@ -9,8 +9,11 @@ public class Java3DViewerTester {
 	 */
 	public static void main(String[] args) {
 		
-		DrawModel d = drawWall2();
-//		DrawModel d = drawFN2();
+//		DrawModel d = drawWall2();
+		DrawModel d = drawFN2();
+		
+//		d.setMeshSize(0.1);
+//		d.meshAll();
 		
 		Java3DViewer.view(d);
 	}
@@ -20,36 +23,37 @@ public class Java3DViewerTester {
 		DrawModel d = new DrawModelImpl();
 		d.setGeometryShapeManager(new GeometryShapeManagerOCC());
 		d.setDrawShapeModelManager(new VisualShapeManagerImpl());
-	
-		d.setLineWidth(0.1f);
-		
-		d.circle(0.6);
-		
-		d.circle(0.4);
-		
-		d.moveTo(0, -0.2, 0);
-		d.setFaceColor(Color.CYAN);
-		VisualShape b1 = d.box(0.8, 0.3, 0.3);
-		
-		d.setFaceColor(Color.GREEN);
-		VisualShape b2 = d.box(0.8, 0.15, 0.6);
-				
-		d.setFaceColor(Color.MAGENTA);
-		VisualShape box = d.box(-0.25, 0.25, 0.25);
-		
-		d.setFaceColor(Color.ORANGE);
-		d.box(-0.1, 0.1, 0.35);
-		
-//		d.setTexture("brick1.gif");
-		
-		d.setFaceColor(Color.YELLOW);
-		VisualShape cyl = d.cylinder(0.5, 0.7, Math.PI*3/2);
-				
-//		d.noTexture();
-		d.moveTo(0, 0, 0);
-		d.setFaceColor(Color.BLUE);
-		d.cylinder(0.2, 0.3, Math.PI*2);
-		d.save("FN.brep");
+//	
+//		d.setLineWidth(0.1f);
+//		
+//		d.circle(0.6);
+//		
+//		d.circle(0.4);
+//		
+//		d.moveTo(0, -0.2, 0);
+//		d.setFaceColor(Color.CYAN);
+//		VisualShape b1 = d.box(0.8, 0.3, 0.3);
+//		
+//		d.setFaceColor(Color.GREEN);
+//		VisualShape b2 = d.box(0.8, 0.15, 0.6);
+//				
+//		d.setFaceColor(Color.MAGENTA);
+//		VisualShape box = d.box(-0.25, 0.25, 0.25);
+//		
+//		d.setFaceColor(Color.ORANGE);
+//		d.box(-0.1, 0.1, 0.35);
+//		
+////		d.setTexture("brick1.gif");
+//		
+//		d.setFaceColor(Color.YELLOW);
+//		VisualShape cyl = d.cylinder(0.5, 0.7, Math.PI*3/2);
+//				
+////		d.noTexture();
+//		d.moveTo(0, 0, 0);
+//		d.setFaceColor(Color.BLUE);
+//		d.cylinder(0.2, 0.3, Math.PI*2);
+//		d.save("FN.brep");
+		d.load("C:/GEO/FEMLAST/FEM/FN.brep");
 		return d;
 	}
 	

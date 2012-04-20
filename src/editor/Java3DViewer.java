@@ -1,5 +1,6 @@
 package editor;
 
+import java.awt.Color;
 import java.awt.Frame;
 import java.awt.GraphicsConfigTemplate;
 import java.awt.GraphicsConfiguration;
@@ -501,6 +502,11 @@ public class Java3DViewer extends Canvas3D {
 		baseFrame.add(viewer);
 	    
 		shell.open();
+		
+		d.setFaceColor(Color.GREEN);
+		d.circle(0.9);
+//		viewer.draw(d);
+		
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) display.sleep();
 		}
